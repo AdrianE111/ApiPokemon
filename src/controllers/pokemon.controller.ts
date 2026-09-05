@@ -35,3 +35,22 @@ export async function obtenerPokemon(
     tipos: pokemon.types.map((elemento) => elemento.type.name),
   });
 }
+
+interface ListaPokemonRespuesta {
+  results: { name: string }[];
+}
+
+export async function obtenerListaPokemon(
+  _req: Request,
+  res: Response,
+): Promise<void> {
+  const respuesta = await fetch("https://pokeapi.co/api/v2/pokemon?limit=20");
+
+  if (!respuesta.ok) {
+    throw new Error(`PokéAPI respondió con estado ${respuesta.status}`);
+  }
+
+  const lista = (await respuesta.json()) as ListaPokemonRespuesta;
+
+  res.json(lista.results.map((pokemon) => ({ nombre: pokemon.name })));
+}
