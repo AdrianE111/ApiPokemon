@@ -88,7 +88,38 @@ export async function obtenerListaPokemon(
 
     const lista = (await respuesta.json()) as ListaPokemonRespuesta;
 
-    res.json(lista.results.map((pokemon) => ({ nombre: pokemon.name })));
+    const detalles: PokemonRespuesta[] = [];
+
+    // Consultar cinco detalles a la vez y conservar el orden de la lista.
+    for (let inicio = 0; inicio < lista.results.length; inicio += 5) {
+      const grupo = lista.results.slice(inicio, inicio + 5);
+      const respuestas = await Promise.all(
+        grupo.map((pokemon) =>
+          fetch(
+            `https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(pokemon.name)}`,
+            { signal: AbortSignal.timeout(5000) },
+          ),
+        ),
+      );
+
+      // No entregar una lista incompleta si falla alguno de sus detalles.
+      if (respuestas.some((detalle) => !detalle.ok)) {
+        res.status(502).json({ error: "El Centro Pokémon está fuera de servicio temporalmente" });
+        return;
+      }
+
+      const detallesGrupo = await Promise.all(
+        respuestas.map(async (detalle) => (await detalle.json()) as PokemonRespuesta),
+      );
+      detalles.push(...detallesGrupo);
+    }
+
+    res.json(detalles.map((pokemon) => ({
+      id: pokemon.id,
+      nombre: pokemon.name,
+      imagen: pokemon.sprites.front_default,
+      tipos: pokemon.types.map((elemento) => elemento.type.name),
+    })));
   } catch (err: unknown) {
     if (err instanceof Error && err.name === "TimeoutError") {
       res.status(504).json({ error: "¡Un Snorlax salvaje está bloqueando el camino y tardó demasiado!" });
