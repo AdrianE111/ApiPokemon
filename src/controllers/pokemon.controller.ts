@@ -45,15 +45,15 @@ export async function obtenerPokemon(
       imagen: pokemon.sprites.front_default,
       tipos: pokemon.types.map((elemento) => elemento.type.name),
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     // 3. Timeout (504)
-    if (err.name === "TimeoutError") {
+    if (err instanceof Error && err.name === "TimeoutError") {
       res.status(504).json({ error: "¡Un Snorlax salvaje está bloqueando el camino y tardó demasiado!" });
       return;
     }
 
     // 4. Error de red al consultar PokéAPI (502)
-    if (err.name === "TypeError" && err.message?.includes("fetch")) {
+    if (err instanceof Error && err.name === "TypeError" && err.message.includes("fetch")) {
       res.status(502).json({ error: "La señal del Pokédex no pudo conectar con la red de Silph S.A." });
       return;
     }
@@ -89,13 +89,13 @@ export async function obtenerListaPokemon(
     const lista = (await respuesta.json()) as ListaPokemonRespuesta;
 
     res.json(lista.results.map((pokemon) => ({ nombre: pokemon.name })));
-  } catch (err: any) {
-    if (err.name === "TimeoutError") {
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === "TimeoutError") {
       res.status(504).json({ error: "¡Un Snorlax salvaje está bloqueando el camino y tardó demasiado!" });
       return;
     }
 
-    if (err.name === "TypeError" && err.message?.includes("fetch")) {
+    if (err instanceof Error && err.name === "TypeError" && err.message.includes("fetch")) {
       res.status(502).json({ error: "La señal del Pokédex no pudo conectar con la red de Silph S.A." });
       return;
     }
