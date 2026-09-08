@@ -67,12 +67,28 @@ interface ListaPokemonRespuesta {
   results: { name: string }[];
 }
 
+interface PokemonLista {
+  id: number;
+  nombre: string;
+  imagen: string | null;
+  tipos: string[];
+}
+
+let cacheListaPokemon: PokemonLista[] | null = null;
+
 export async function obtenerListaPokemon(
   _req: Request,
   res: Response,
 ): Promise<void> {
   try {
-    const respuesta = await fetch("https://pokeapi.co/api/v2/pokemon?limit=20", {
+    // Evita repetir más de mil consultas cada vez que el frontend recarga.
+    if (cacheListaPokemon) {
+      res.json(cacheListaPokemon);
+      return;
+    }
+
+    // PokéAPI acepta un límite alto para devolver el catálogo completo.
+    const respuesta = await fetch("https://pokeapi.co/api/v2/pokemon?limit=100000", {
       signal: AbortSignal.timeout(5000),
     });
 
@@ -90,9 +106,9 @@ export async function obtenerListaPokemon(
 
     const detalles: PokemonRespuesta[] = [];
 
-    // Consultar cinco detalles a la vez y conservar el orden de la lista.
-    for (let inicio = 0; inicio < lista.results.length; inicio += 5) {
-      const grupo = lista.results.slice(inicio, inicio + 5);
+    // Consultar veinte detalles a la vez y conservar el orden de la lista.
+    for (let inicio = 0; inicio < lista.results.length; inicio += 20) {
+      const grupo = lista.results.slice(inicio, inicio + 20);
       const respuestas = await Promise.all(
         grupo.map((pokemon) =>
           fetch(
@@ -114,12 +130,14 @@ export async function obtenerListaPokemon(
       detalles.push(...detallesGrupo);
     }
 
-    res.json(detalles.map((pokemon) => ({
+    cacheListaPokemon = detalles.map((pokemon) => ({
       id: pokemon.id,
       nombre: pokemon.name,
       imagen: pokemon.sprites.front_default,
       tipos: pokemon.types.map((elemento) => elemento.type.name),
-    })));
+    }));
+
+    res.json(cacheListaPokemon);
   } catch (err: unknown) {
     if (err instanceof Error && err.name === "TimeoutError") {
       res.status(504).json({ error: "¡Un Snorlax salvaje está bloqueando el camino y tardó demasiado!" });
