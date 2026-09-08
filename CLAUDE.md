@@ -12,11 +12,11 @@
 ## 2. Respuestas a las 3 Preguntas de Revisión
 
 1. **¿Cuál fue la decisión más difícil?**
-   Resolver el consumo concurrente del endpoint de la lista de 20 Pokémon. Lanzar 20 peticiones simultáneas podía saturar la conexión o provocar bloqueos por rate limit en PokéAPI, mientras que hacerlas secuenciales resultaba demasiado lento. La solución óptima fue procesarlas en lotes (*chunks*) de 5 mediante `Promise.all`, logrando un balance ideal entre velocidad y estabilidad.
+   Resolver el consumo concurrente del catálogo completo. Consultar todos los detalles al mismo tiempo podía saturar la conexión o provocar bloqueos por límite de solicitudes en PokéAPI, mientras que hacerlo de forma secuencial resultaba demasiado lento. La solución fue procesar los detalles en lotes de 20 mediante `Promise.all` y guardar el resultado en una caché en memoria, equilibrando el tiempo de respuesta y la cantidad de peticiones simultáneas.
 
 2. **¿Qué alternativas descartó?**
    * **Axios u otras librerías HTTP externas:** Se descartaron para mantener las dependencias al mínimo, aprovechando que Node.js incluye `fetch` y `AbortSignal` de forma nativa.
    * **Frameworks en otros lenguajes (Flask / Spring Boot):** Se descartaron para evitar la fragmentación técnica y asegurar que todo el equipo trabajara bajo el mismo ecosistema TypeScript.
 
 3. **¿De qué está menos segura?**
-   De la variabilidad en los tiempos de respuesta de PokéAPI bajo alta demanda externa. Esta incertidumbre quedó mitigada configurando el límite de 5000 ms con `AbortSignal.timeout(5000)` y el manejo explícito de `TimeoutError` (código HTTP 504).
+   De la variabilidad en los tiempos de respuesta de PokéAPI durante la primera carga del catálogo completo. Esta incertidumbre se redujo con un límite de 5000 ms por petición mediante `AbortSignal.timeout(5000)`, manejo explícito de `TimeoutError` con código HTTP 504, consultas en lotes de 20 y caché en memoria para las cargas posteriores.
