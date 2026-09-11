@@ -19,9 +19,11 @@ export async function obtenerPokemon(
 ): Promise<void> {
   try {
     const nombre = req.params.nombre.trim().toLowerCase();
+    
+    const baseUrl = process.env.POKEAPI_BASE_URL || "https://pokeapi.co/api/v2/pokemon";
 
     const respuesta = await fetch(
-      `https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(nombre)}`,
+      `${baseUrl}/${encodeURIComponent(nombre)}`,
       { signal: AbortSignal.timeout(5000) },
     );
 
@@ -88,7 +90,10 @@ export async function obtenerListaPokemon(
     }
 
     // PokéAPI acepta un límite alto para devolver el catálogo completo.
-    const respuesta = await fetch("https://pokeapi.co/api/v2/pokemon?limit=100000", {
+    const baseUrl = process.env.POKEAPI_BASE_URL || "https://pokeapi.co/api/v2/pokemon";
+
+    // PokéAPI acepta un límite alto para devolver el catálogo completo.
+    const respuesta = await fetch(`${baseUrl}?limit=100000`, {
       signal: AbortSignal.timeout(5000),
     });
 
@@ -112,7 +117,7 @@ export async function obtenerListaPokemon(
       const respuestas = await Promise.all(
         grupo.map((pokemon) =>
           fetch(
-            `https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(pokemon.name)}`,
+            `${baseUrl}/${encodeURIComponent(pokemon.name)}`,
             { signal: AbortSignal.timeout(5000) },
           ),
         ),
